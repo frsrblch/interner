@@ -9,7 +9,7 @@ pub trait Intern<T> {
     fn intern(&mut self, value: T) -> Self::Output;
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct StrInterner {
     buffer: String,
     map: HashMap<HashKey, StrRange>,

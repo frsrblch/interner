@@ -15,6 +15,12 @@ pub struct StrInterner {
     map: HashMap<HashKey, StrRange>,
 }
 
+impl StrInterner {
+    pub fn iter(&self) -> impl Iterator<Item = &StrRange> {
+        self.map.values()
+    }
+}
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct StrRange {
     start: u32,
@@ -100,6 +106,12 @@ impl std::ops::Index<&StrRange> for StrInterner {
 pub struct Interner<T> {
     buffer: Vec<T>,
     map: HashMap<HashKey, SliceRange<T>>,
+}
+
+impl<T> Interner<T> {
+    pub fn iter(&self) -> impl Iterator<Item = &SliceRange<T>> {
+        self.map.values()
+    }
 }
 
 impl<T: Hash + Clone> Intern<&[T]> for Interner<T> {

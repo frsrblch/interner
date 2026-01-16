@@ -9,7 +9,7 @@ pub trait Intern<T> {
     fn intern(&mut self, value: T) -> Self::Output;
 }
 
-#[derive(Default, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct StrInterner {
     buffer: String,
     map: HashMap<HashKey, StrRange>,
@@ -110,7 +110,7 @@ impl std::ops::Index<&StrRange> for StrInterner {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Interner<T> {
     buffer: Vec<T>,
     map: HashMap<HashKey, SliceRange<T>>,

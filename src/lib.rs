@@ -16,8 +16,16 @@ pub struct StrInterner {
 }
 
 impl StrInterner {
-    pub fn iter(&self) -> impl Iterator<Item = &StrRange> {
-        self.map.values()
+    pub fn len(&self) -> usize {
+        self.buffer.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.buffer.is_empty()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &str> {
+        self.map.values().map(|range| &self[range])
     }
 }
 
@@ -109,8 +117,16 @@ pub struct Interner<T> {
 }
 
 impl<T> Interner<T> {
-    pub fn iter(&self) -> impl Iterator<Item = &SliceRange<T>> {
-        self.map.values()
+    pub fn len(&self) -> usize {
+        self.buffer.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.buffer.is_empty()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &[T]> {
+        self.map.values().map(|range| &self[range])
     }
 }
 

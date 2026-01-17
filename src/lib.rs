@@ -4,11 +4,6 @@ mod tests;
 use std::collections::{HashMap, hash_map::Entry};
 use std::hash::{Hash, Hasher};
 
-pub trait Intern<T> {
-    type Output;
-    fn intern(&mut self, value: T) -> Self::Output;
-}
-
 #[derive(Debug, Default, Clone)]
 pub struct StrInterner {
     buffer: String,
@@ -27,18 +22,9 @@ impl StrInterner {
     pub fn iter(&self) -> impl Iterator<Item = &str> {
         self.map.values().map(|range| &self[range])
     }
-}
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct StrRange {
-    start: u32,
-    end: u32,
-}
-
-impl Intern<&str> for StrInterner {
-    type Output = StrRange;
-
-    fn intern(&mut self, value: &str) -> Self::Output {
+    pub fn intern(&mut self, value: impl AsRef<str>) -> StrRange {
+        let value = value.as_ref();
         let hash = HashKey::new_str(value);
         match self.map.entry(hash) {
             Entry::Occupied(entry) => *entry.get(),
@@ -52,25 +38,18 @@ impl Intern<&str> for StrInterner {
             }
         }
     }
+
+    pub fn get(&self, value: impl AsRef<str>) -> Option<StrRange> {
+        let value = value.as_ref();
+        let hash = HashKey::new_str(value);
+        self.map.get(&hash).copied()
+    }
 }
 
-impl Intern<String> for StrInterner {
-    type Output = StrRange;
-
-    fn intern(&mut self, value: String) -> Self::Output {
-        let hash = HashKey::new_str(&value);
-        match self.map.entry(hash) {
-            Entry::Occupied(entry) => *entry.get(),
-            Entry::Vacant(entry) => {
-                let start = self.buffer.len();
-                self.buffer.push_str(&value);
-                let end = self.buffer.len();
-                let range = StrRange::new(start, end);
-                entry.insert(range);
-                range
-            }
-        }
-    }
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct StrRange {
+    start: u32,
+    end: u32,
 }
 
 impl StrRange {
@@ -130,54 +109,51 @@ impl<T> Interner<T> {
     }
 }
 
-impl<T: Hash + Clone> Intern<&[T]> for Interner<T> {
-    type Output = SliceRange<T>;
+impl<T: Hash> Interner<T> {
+    pub fn intern(&mut self, values: Vec<T>) -> SliceRange<T> {
+        let hash = HashKey::new_slice(&values);
+        match self.map.entry(hash) {
+            Entry::Occupied(entry) => *entry.get(),
+            Entry::Vacant(entry) => {
+                let start = self.buffer.len();
+                self.buffer.extend(values);
+                let end = self.buffer.len();
+                let range = SliceRange::new(start, end);
+                entry.insert(range);
+                range
+            }
+        }
+    }
 
-    fn intern(&mut self, values: &[T]) -> Self::Output {
+    pub fn intern_array<const N: usize>(&mut self, values: [T; N]) -> SliceRange<T> {
+        let hash = HashKey::new_slice(&values);
+        match self.map.entry(hash) {
+            Entry::Occupied(entry) => *entry.get(),
+            Entry::Vacant(entry) => {
+                let start = self.buffer.len();
+                self.buffer.extend(values);
+                let end = self.buffer.len();
+                let range = SliceRange::new(start, end);
+                entry.insert(range);
+                range
+            }
+        }
+    }
+
+    pub fn get(&self, values: &[T]) -> Option<SliceRange<T>> {
+        let hash = HashKey::new_slice(values);
+        self.map.get(&hash).copied()
+    }
+}
+
+impl<T: Hash + Clone> Interner<T> {
+    pub fn intern_slice(&mut self, values: &[T]) -> SliceRange<T> {
         let hash = HashKey::new_slice(values);
         match self.map.entry(hash) {
             Entry::Occupied(entry) => *entry.get(),
             Entry::Vacant(entry) => {
                 let start = self.buffer.len();
                 self.buffer.extend(values.iter().cloned());
-                let end = self.buffer.len();
-                let range = SliceRange::new(start, end);
-                entry.insert(range);
-                range
-            }
-        }
-    }
-}
-
-impl<T: Hash> Intern<Vec<T>> for Interner<T> {
-    type Output = SliceRange<T>;
-
-    fn intern(&mut self, values: Vec<T>) -> Self::Output {
-        let hash = HashKey::new_slice(&values);
-        match self.map.entry(hash) {
-            Entry::Occupied(entry) => *entry.get(),
-            Entry::Vacant(entry) => {
-                let start = self.buffer.len();
-                self.buffer.extend(values);
-                let end = self.buffer.len();
-                let range = SliceRange::new(start, end);
-                entry.insert(range);
-                range
-            }
-        }
-    }
-}
-
-impl<T: Hash, const N: usize> Intern<[T; N]> for Interner<T> {
-    type Output = SliceRange<T>;
-
-    fn intern(&mut self, values: [T; N]) -> Self::Output {
-        let hash = HashKey::new_slice(&values);
-        match self.map.entry(hash) {
-            Entry::Occupied(entry) => *entry.get(),
-            Entry::Vacant(entry) => {
-                let start = self.buffer.len();
-                self.buffer.extend(values);
                 let end = self.buffer.len();
                 let range = SliceRange::new(start, end);
                 entry.insert(range);

@@ -43,7 +43,7 @@ fn intern_vec_and_array() {
     let range = interner.intern(vec![1, 2, 3]);
     assert_eq!(&[1, 2, 3], &interner[range]);
 
-    let range2 = interner.intern([1, 2, 3]);
+    let range2 = interner.intern_slice(&[1, 2, 3]);
 
     assert_eq!(range, range2);
 }
@@ -66,4 +66,22 @@ fn interning_duplicate_slices() {
     let foo2 = interner.intern(vec![1, 2, 3]);
 
     assert_eq!(foo, foo2);
+}
+
+#[test]
+fn intern_and_get_str() {
+    let mut interner = StrInterner::default();
+
+    let key = interner.intern("foo");
+
+    assert_eq!(Some(key), interner.get("foo"));
+}
+
+#[test]
+fn intern_and_get_slice() {
+    let mut interner = Interner::default();
+
+    let key = interner.intern_slice(&[1, 2, 3, 4]);
+
+    assert_eq!(Some(key), interner.get(&[1, 2, 3, 4]));
 }
